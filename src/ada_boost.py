@@ -8,54 +8,56 @@ class AdaBoost:
     alphas: Union[list[np.float32], None] = None
 
     def predit(
-        self, domain: np.ndarray[np.float32]
+        self, data: np.ndarray[np.ndarray[np.float32]]
     ) -> Union[np.ndarray[np.int32], None]:
         if self.learners is None or self.alphas is None:
             return None
-        result = np.zeros(len(domain), dtype=np.float32)
+        result: np.ndarray[np.float32] = np.zeros(len(data), dtype=np.float32)
         for i in range(len(self.learners)):
             result = np.add(
                 result,
-                np.multiply(self.alphas[i], self.learners[i].predict(domain)),
+                np.multiply(self.alphas[i], self.learners[i].predict(data)),
             )
-        output = np.zeros(len(result), dtype=np.int32)
+        output: np.ndarray[np.int32] = np.zeros(len(result), dtype=np.int32)
         for i in range(len(output)):
             output[i] = self.sign(result[i])
         return output
 
     def train(
         self,
-        domain: np.ndarray[np.float32],
-        range: np.ndarray[np.float32],
+        data: np.ndarray[np.ndarray[np.float32]],
+        target: np.ndarray[np.float32],
         depth: int,
-    ) -> Union[DecisionTreeClassifier, None]:
-        if len(domain) != len(range):
+    ) -> None:
+        if len(data) != len(target):
             return None
         self.learners = [None] * depth
         self.alphas = [None] * depth
-        distribution: np.ndarray[np.float32] = self.uniform_dist(len(domain))
+        distribution: np.ndarray[np.float32] = self.uniform_dist(len(data))
+        learner = DecisionTreeClassifier(random_state=1, max_depth=3)
         for i in range(depth):
-            self.learners[i] = DecisionTreeClassifier(random_state=1)
-            self.learners[i].fit(domain, range, sample_weight=distribution)
-            prediction: np.ndarray[np.float32] = self.learners[i].predict(
-                domain
+            self.learners[i] = learner.fit(
+                data, target, sample_weight=distribution
             )
-            errors = self.errors(prediction, range)
+            prediction: np.ndarray[np.float32] = self.learners[i].predict(data)
+            errors: np.ndarray[np.float32] = self.errors(prediction, target)
             self.alphas[i] = self.alpha(distribution, errors)
-            distribution = self.update_distribution(
+            distribution: np.ndarray[np.float32] = self.update_distribution(
                 distribution, errors, self.alphas[i]
             )
 
     def errors(
         self,
         prediction: np.ndarray[np.float32],
-        range: np.ndarray[np.float32],
+        target: np.ndarray[np.float32],
     ) -> Union[np.ndarray[np.float32], None]:
-        if len(prediction) != len(range):
+        if len(prediction) != len(target):
             return None
-        errors = np.zeros(len(prediction), dtype=np.float32)
+        errors: np.ndarray[np.float32] = np.zeros(
+            len(prediction), dtype=np.float32
+        )
         for i in range(len(errors)):
-            errors[i] = prediction[i] * range[i]
+            errors[i] = prediction[i] * target[i]
         return errors
 
     def update_distribution(
@@ -66,7 +68,9 @@ class AdaBoost:
     ) -> Union[np.ndarray[np.float32], None]:
         if len(distribution) != len(errors):
             return None
-        result = np.zeros(len(distribution), dtype=np.float32)
+        result: np.ndarray[np.float32] = np.zeros(
+            len(distribution), dtype=np.float32
+        )
         for i in range(len(result)):
             result[i] = distribution[i] * np.exp(-1 * alpha * errors[i])
         return self.normalize(result)
@@ -78,7 +82,7 @@ class AdaBoost:
     ) -> Union[np.float32, None]:
         if len(distribution) != len(errors):
             return None
-        error = np.dot(distribution, errors)
+        error: np.float32 = min(np.dot(distribution, errors), 1)
         return np.float32(0.5 * np.log2((1 + error) / (1 - error)))
 
     def sign(self, num: np.float32) -> np.int32:
@@ -93,7 +97,3 @@ class AdaBoost:
         return np.full(
             shape=len, fill_value=np.float32(1 / len), dtype=np.float32
         )
-
-
-if __name__ == "__main__":
-    pass
