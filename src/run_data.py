@@ -7,5 +7,5 @@ if __name__ == "__main__":
     data: np.ndarray[np.ndarray[np.float64]] = digits["data"]
     target: np.ndarray[np.int64] = digits["target"]
     learner = DigitClassifier()
-    learner.train(data, target, 3)
-    print(learner.predit(data))
+    learner.train(data, target, 5)
+    # print(learner.predit(data))

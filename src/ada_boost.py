@@ -34,11 +34,11 @@ class AdaBoost:
         self.learners = [None] * depth
         self.alphas = [None] * depth
         distribution: np.ndarray[np.float32] = self.uniform_dist(len(data))
-        learner = DecisionTreeClassifier(random_state=1, max_depth=3)
         for i in range(depth):
-            self.learners[i] = learner.fit(
-                data, target, sample_weight=distribution
+            self.learners[i] = DecisionTreeClassifier(
+                random_state=1, max_depth=2
             )
+            self.learners[i].fit(data, target, sample_weight=distribution)
             prediction: np.ndarray[np.float32] = self.learners[i].predict(data)
             errors: np.ndarray[np.float32] = self.errors(prediction, target)
             self.alphas[i] = self.alpha(distribution, errors)
