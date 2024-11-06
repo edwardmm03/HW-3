@@ -50,11 +50,11 @@ def sign(num: np.float32) -> np.int32:
 def alpha(
     distribution: np.ndarray[np.float32],
     errors: np.ndarray[np.float32],
-) -> Union[np.float32, None]:
+):
     if len(distribution) != len(errors):
         return None
     error: np.float32 = min(np.dot(distribution, errors), 1)
-    return np.float32(0.5 * np.log2((1 + error) / (1 - error)))
+    return np.float32(0.5 * np.log2((1 + error) / (1 - error))), error
 
 
 class AdaBoostDTC:
@@ -82,11 +82,12 @@ class AdaBoostDTC:
         data: np.ndarray[np.ndarray[np.float32]],
         target: np.ndarray[np.float32],
         depth: int,
-    ) -> None:
+    ) -> np.ndarray[np.float32]:
         if len(data) != len(target):
             return None
         self.learners = [None] * depth
         self.alphas = [None] * depth
+        self.errors = [None] * depth
         distribution: np.ndarray[np.float32] = uniform_dist(len(data))
         for i in range(depth):
             self.learners[i] = DecisionTreeClassifier(
@@ -95,10 +96,11 @@ class AdaBoostDTC:
             self.learners[i].fit(data, target, sample_weight=distribution)
             prediction: np.ndarray[np.float32] = self.learners[i].predict(data)
             errors_: np.ndarray[np.float32] = errors(prediction, target)
-            self.alphas[i] = alpha(distribution, errors_)
+            self.alphas[i], self.errors[i] = alpha(distribution, errors_)
             distribution: np.ndarray[np.float32] = update_distribution(
                 distribution, errors_, self.alphas[i]
             )
+        return self.errors
 
 
 class AdaBoostGBC:
@@ -126,11 +128,12 @@ class AdaBoostGBC:
         data: np.ndarray[np.ndarray[np.float32]],
         target: np.ndarray[np.float32],
         depth: int,
-    ) -> None:
+    ) -> np.ndarray[np.float32]:
         if len(data) != len(target):
             return None
         self.learners = [None] * depth
         self.alphas = [None] * depth
+        self.errors = [None] * depth
         distribution: np.ndarray[np.float32] = uniform_dist(len(data))
         for i in range(depth):
             self.learners[i] = GradientBoostingClassifier(
@@ -139,7 +142,8 @@ class AdaBoostGBC:
             self.learners[i].fit(data, target, sample_weight=distribution)
             prediction: np.ndarray[np.float32] = self.learners[i].predict(data)
             errors_: np.ndarray[np.float32] = errors(prediction, target)
-            self.alphas[i] = alpha(distribution, errors_)
+            self.alphas[i],self.errors[i] = alpha(distribution, errors_)
             distribution: np.ndarray[np.float32] = update_distribution(
                 distribution, errors_, self.alphas[i]
             )
+        return self.errors
