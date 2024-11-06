@@ -1,10 +1,10 @@
-from ada_boost import AdaBoost
+from ada_boost import AdaBoostDTC, AdaBoostGBC
 from typing import Union
 import numpy as np
 
 
 class DigitClassifier:
-    classifiers: Union[list[AdaBoost], None] = None
+    classifiers: Union[list[AdaBoostGBC], None] = None
 
     def train(
         self,
@@ -14,7 +14,7 @@ class DigitClassifier:
     ) -> None:
         classifiers = [None] * 10
         for i in range(len(classifiers)):
-            classifiers[i] = AdaBoost()
+            classifiers[i] = AdaBoostGBC()
             classifiers[i].train(data, self.target_digit(target, i), depth)
 
     def target_digit(
